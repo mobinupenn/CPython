@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>C and Python fundamentals</title>
+<style>
+:root{--bg:#F1F4F6;--ink:#172531;--mute:#566976;--line:#C9D4DB;--acc:#0E6B8F;--ok:#1B7A43;--bad:#B3261E;--code:#0F1B24}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 Charter,"Iowan Old Style",Georgia,serif}
+.app{display:flex;min-height:100vh}
+nav{width:236px;flex:none;padding:24px 14px;border-right:1px solid var(--line);position:sticky;top:0;height:100vh;overflow:auto}
+nav h1{font-size:19px;line-height:1.25;margin:0 0 6px 10px}
+nav p{font-size:13px;color:var(--mute);margin:0 0 18px 10px}
+nav button,nav span{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 10px;border-left:4px solid transparent;font:inherit;font-size:15px;color:var(--ink)}
+nav button{cursor:pointer}nav button:hover{background:#E4EAEE}
+nav button.on{background:#fff;font-weight:700;border-left-color:var(--acc)}
+nav span{color:#8A99A4}
+main{flex:1;max-width:800px;padding:32px 28px 90px}
+h2{font-size:32px;line-height:1.15;margin:0 0 6px}
+h3{font-size:21px;margin:40px 0 10px}
+p,li{max-width:68ch}
+.mute{color:var(--mute);font-size:15px}
+code,pre,textarea,input{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px}
+pre{background:var(--code);color:#E6EEF3;padding:14px 16px;border-radius:4px;overflow-x:auto;line-height:1.5;margin:12px 0}
+:not(pre)>code{background:#E1E8ED;padding:1px 5px;border-radius:3px}
+.card{background:#fff;border:1px solid var(--line);border-radius:4px;padding:16px;margin:14px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button.b,button.opt{font:inherit;font-size:15px;border:1px solid var(--acc);background:var(--acc);color:#fff;border-radius:4px;padding:6px 14px;cursor:pointer}
+button.b:disabled{opacity:.4;cursor:default}
+button.ghost{background:#fff;color:var(--acc)}
+button.opt{display:block;width:100%;text-align:left;background:#fff;color:var(--ink);border-color:var(--line);margin:6px 0}
+button.opt:hover{border-color:var(--acc)}
+button.opt.ok{background:#E3F4EA;border-color:var(--ok)}
+button.opt.bad{background:#FBE6E4;border-color:var(--bad)}
+input{flex:1;min-width:160px;padding:6px 10px;border:1px solid var(--line);border-radius:4px}
+textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:4px;background:#FAFBFC;margin:8px 0;resize:vertical}
+.why{font-size:15px;margin:8px 0 0}.okc{color:var(--ok)}.badc{color:var(--bad)}
+.viz{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.src{background:var(--code);border-radius:4px;padding:8px 0;align-self:start}
+.line{font:14px/1.7 ui-monospace,Menlo,Consolas,monospace;color:#B9C8D3;padding:0 12px;border-left:4px solid transparent;white-space:pre}
+.line.on{background:#1D3342;color:#fff;border-left-color:#5CC8EE}
+.mem{border-top:1px solid var(--line)}
+.cell{display:grid;grid-template-columns:62px 64px 1fr;background:#fff;border:1px solid var(--line);border-top:0;font:14px ui-monospace,Menlo,Consolas,monospace}
+.cell span{padding:5px 8px}.ad{color:var(--mute);border-right:1px solid var(--line)}.nm{font-weight:700;border-right:1px solid var(--line)}
+.cell.hot{background:#FFF1B8;transition:background .4s}
+@media(max-width:760px){.app{flex-direction:column}nav{width:100%;height:auto;position:static;border-right:0;border-bottom:1px solid var(--line)}main{padding:22px 16px 80px}.viz{grid-template-columns:1fr}}
+</style></head>
+<body><div class="app"><nav id="nav"></nav><main id="main"></main></div>
+<script>
+const $=s=>document.querySelector(s);
+function h(t,a,...k){const e=document.createElement(t);for(const x in a||{}){if(x==='class')e.className=a[x];else if(x.startsWith('on'))e[x]=a[x];else e.setAttribute(x,a[x])}for(const c of k.flat())e.append(c&&c.nodeType?c:document.createTextNode(c==null?'':c));return e}
+const store={get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+
+const L=[
+{id:'c1',title:'C 1: Memory and pointers',sub:'The mental model everything else in C rests on.',acc:'#0E6B8F',
+intro:`<p>In C# or Python a runtime protects you: it frees memory, checks array bounds and gives you a real string type. C has none of that. A program is bytes in memory, and a <b>pointer is a variable that holds an address</b>.</p>
+<p>Data lives in one of three places: the <b>stack</b> (locals, released automatically when the function returns), the <b>heap</b> (memory you request with <code>malloc</code> and must <code>free</code>), and <b>static</b> storage (globals, alive for the whole run).</p>
+<ul><li><code>&amp;x</code> is the address of <code>x</code>; <code>*p</code> is the thing <code>p</code> points to.</li>
+<li><code>p + 1</code> moves one <i>element</i>, not one byte.</li>
+<li><code>arr[i]</code> is defined as <code>*(arr + i)</code>.</li>
+<li>C passes everything by value. To change the caller’s data, pass its address.</li>
+<li>An array name decays to a pointer to its first element, so <code>sizeof</code> differs inside a function.</li>
+<li>Nothing checks bounds. Reading <code>arr[10]</code> compiles, and the result is undefined behavior.</li></ul>`,
+code:`#include <stdio.h>
+
+void swap(int *a, int *b) { int t = *a; *a = *b; *b = t; }
+
+int main(void) {
+    int x = 10;
+    int *p = &x;
+    *p = 20;
+    printf("x=%d *p=%d\\n", x, *p);
+
+    int arr[3] = {1, 2, 3};
+    int *q = arr + 1;
+    *q = 9;
+    printf("%d %d\\n", arr[1], *(arr + 1));
+    printf("%zu %zu\\n", sizeof arr, sizeof q);
+
+    int a = 1, b = 2;
+    swap(&a, &b);
+    printf("a=%d b=%d\\n", a, b);
+    return 0;
+}`,
+viz:{lines:['int x = 10;','int *p = &x;','*p = 20;','int arr[3] = {1, 2, 3};','int *q = arr + 1;','*q = 9;'],
+cells:[['x','0x1000'],['p','0x1008'],['arr[0]','0x1010'],['arr[1]','0x1014'],['arr[2]','0x1018'],['q','0x1020']],
+steps:[
+{line:0,set:{x:'10'},n:'x is a box at 0x1000 holding 10. Cells you have not written yet show ?, which in real C means garbage.'},
+{line:1,set:{p:'0x1000 → x'},n:'p stores the address of x. It is a separate variable with its own address.'},
+{line:2,set:{x:'20'},n:'Writing through *p changed x. The name x was never mentioned on this line.'},
+{line:3,set:{'arr[0]':'1','arr[1]':'2','arr[2]':'3'},n:'An array is consecutive elements. Each int is 4 bytes, so the addresses step by 4.'},
+{line:4,set:{q:'0x1014 → arr[1]'},n:'arr + 1 is the address of the second element: 0x1010 plus 1 element (4 bytes).'},
+{line:5,set:{'arr[1]':'9'},n:'Same idea as before: writing through the pointer modified the array.'}]},
+quiz:[
+{q:'Which expression is exactly equivalent to arr[i]?',o:['*(arr + i)','&arr + i','*arr + i','arr + *i'],a:0,w:'Indexing is defined as pointer arithmetic followed by a dereference. Note *arr + i would add i to the first element’s value.'},
+{q:'On a 64-bit system, void f(int a[4]) { ... } — what is sizeof a inside f?',o:['16','8','4','Undefined'],a:1,w:'The parameter is really int *a, so you get the size of a pointer. The array length is lost, which is why C functions take a separate length argument.'},
+{q:'Why is "int v = 42; return &v;" a bug?',o:['v’s stack frame is gone after return, so the pointer dangles','It never compiles','It leaks heap memory','The pointer is always NULL'],a:0,w:'v lives on the stack and dies with the call. The caller receives an address that may be reused at any moment. Use malloc, a static, or a caller-provided buffer.'}],
+predict:[
+{t:'Using the program above, what do the second and third printf calls print in total? Give all values separated by spaces (64-bit system).',c:'printf("%d %d\\n", arr[1], *(arr + 1));\nprintf("%zu %zu\\n", sizeof arr, sizeof q);',a:'9 9 12 8',w:'arr has 3 ints = 12 bytes; q is a pointer = 8 bytes.'},
+{t:'What does this print?',c:'int n[3] = {5, 6, 7};\nint *p = n;\np++;\n(*p)++;\nprintf("%d %d %d", n[0], n[1], n[2]);',a:'5 7 7',w:'p++ moves the pointer to n[1]. (*p)++ increments the value it points to.'}],
+run:'gcc -std=c11 -Wall -Wextra -g -fsanitize=address,undefined t.c && ./a.out',
+tasks:[
+{t:'Write size_t my_strlen(const char *s)',d:'No <string.h>. A C string ends at the byte with value 0.',h:'Walk a pointer until it points at 0, then subtract the start address.',
+s:`size_t my_strlen(const char *s) {
+    const char *p = s;
+    while (*p) p++;
+    return (size_t)(p - s);
+}`,w:'Pointer subtraction gives the element count between two pointers into the same array.',
+test:`#include <assert.h>
+#include <stdio.h>
+#include <stddef.h>
+/* paste my_strlen here */
+int main(void){assert(my_strlen("")==0);assert(my_strlen("hello")==5);puts("ok");}`},
+{t:'Write void reverse(int *a, size_t n)',d:'Reverse the array in place using two pointers, one from each end. Handle n = 0 and n = 1.',h:'lo starts at a, hi at a + n - 1. Swap, move inward, stop when lo >= hi. Guard small n first, because a + 0 - 1 is already out of bounds.',
+s:`void reverse(int *a, size_t n) {
+    if (n < 2) return;
+    int *lo = a, *hi = a + n - 1;
+    while (lo < hi) {
+        int t = *lo;
+        *lo++ = *hi;
+        *hi-- = t;
+    }
+}`,w:'The early return avoids forming a pointer before the array, which is itself undefined behavior.',
+test:`#include <assert.h>
+#include <stdio.h>
+#include <stddef.h>
+/* paste reverse here */
+int main(void){int a[]={1,2,3,4,5};reverse(a,5);
+assert(a[0]==5&&a[2]==3&&a[4]==1);
+int e[1]={7};reverse(e,1);reverse(e,0);puts("ok");}`}]},
+
+{id:'p1',title:'Python 1: Names, objects and mutability',sub:'The same idea as C pointers, seen from the other side.',acc:'#8A5A00',
+intro:`<p>In Python a variable is a <b>name bound to an object</b>, much like a pointer you never have to dereference. Assignment copies the reference, not the object. That one fact explains most surprises.</p>
+<ul><li><b>Mutable</b> objects (list, dict, set) change in place. <b>Immutable</b> ones (int, str, tuple) never do; “changing” them rebinds the name.</li>
+<li><code>==</code> asks whether two objects have equal values. <code>is</code> asks whether they are the same object.</li>
+<li><code>b = a</code> makes an alias. <code>a.copy()</code> or <code>a[:]</code> makes a <i>shallow</i> copy: new outer container, same inner objects. <code>copy.deepcopy</code> copies recursively.</li>
+<li>Default argument values are evaluated <b>once</b>, when the function is defined.</li></ul>
+<p>Compare with C 1: <code>b = a</code> is like <code>int *b = a</code> (two names, one object), while a C <code>int</code> assignment copies the value.</p>`,
+code:`a = [1, 2, 3]
+b = a              # alias: same object
+b.append(4)
+print(a)           # [1, 2, 3, 4]
+print(a is b)      # True
+
+c = a.copy()       # shallow copy
+c.append(5)
+print(a == c, a is c)   # False False
+
+print([1] == [1], [1] is [1])   # True False
+print(id(a), id(b), id(c))      # a and b match`,
+quiz:[
+{q:'a = [1]; b = a; b += [2]. What is a?',o:['[1]','[1, 2]','[2]','An error'],a:1,w:'For lists, += extends in place, and a and b are the same object. With an immutable type such as a tuple, += would rebind b instead.'},
+{q:'Which statement is guaranteed to be true?',o:['[1] is [1]','[1] == [1] and [1] is not [1]','x = 5; y = 5 always means x is y','"a" is "a" in every Python'],a:1,w:'Two separate list displays create two objects. Identity of small ints and strings is a CPython optimization you should never rely on.'},
+{q:'When is the default value in def f(x, acc=[]) created?',o:['On every call','Once, when the def statement runs','Only when acc is omitted, each time','At import time of the caller'],a:1,w:'The list is created once and stored on the function object, so every call without acc shares it.'}],
+predict:[
+{t:'What does this print?',c:'m = [[0, 0], [0, 0]]\nn = m.copy()\nn[0][0] = 9\nprint(m)',a:'[[9, 0], [0, 0]]',w:'copy() is shallow: n and m have different outer lists but share the same inner lists.'},
+{t:'What does this print? (Careful: both calls are evaluated before print runs.)',c:'def add(x, acc=[]):\n    acc.append(x)\n    return acc\n\nprint(add(1), add(2))',a:'[1, 2] [1, 2]',w:'Both calls return the same shared list object, which holds 1 and 2 by the time print executes.'}],
+run:'python3 t.py',
+tasks:[
+{t:'Write dedupe(items)',d:'Return a new list with duplicates removed, keeping the first occurrence of each item and the original order. Assume items are hashable.',h:'Keep a set of what you have seen. Checking membership in a set is O(1) on average.',
+s:`def dedupe(items):
+    seen, out = set(), []
+    for x in items:
+        if x not in seen:
+            seen.add(x)
+            out.append(x)
+    return out`,w:'dict.fromkeys(items) also works and preserves order in Python 3.7+, but know the loop version for interviews.',
+test:`# paste dedupe above
+assert dedupe([3, 1, 3, 2, 1]) == [3, 1, 2]
+assert dedupe([]) == []
+print("ok")`},
+{t:'Fix the mutable default',d:'This function shares state between calls. Rewrite it so that every call without acc starts with a fresh list.\n\ndef add(x, acc=[]):\n    acc.append(x)\n    return acc',h:'Use None as the default and create the list inside the function body.',
+s:`def add(x, acc=None):
+    if acc is None:
+        acc = []
+    acc.append(x)
+    return acc`,w:'The sentinel pattern. Use "is None", not "if not acc", so a caller’s empty list is still honored.',
+test:`# paste add above
+assert add(1) == [1]
+assert add(2) == [2]
+assert add(3, [9]) == [9, 3]
+print("ok")`}]},
+{id:'c2',title:'C 2: Arrays and strings',sub:'Where most real-world C bugs are born.',acc:'#0E6B8F',
+intro:`<p>An array is a fixed run of consecutive elements with no length stored anywhere. A C string is just a <code>char</code> array whose last byte is <code>'\\0'</code>, and every <code>&lt;string.h&gt;</code> function trusts that byte to find the end.</p>
+<ul><li><code>char a[] = "hi"</code> is a 3-byte array you own and may modify. <code>const char *b = "hi"</code> points at a read-only literal; writing through it is undefined behavior.</li>
+<li><code>sizeof</code> counts bytes of the array (including the terminator); <code>strlen</code> counts characters before it.</li>
+<li><code>strcpy</code> and <code>strcat</code> never check the destination size. Prefer <code>snprintf</code> or <code>memcpy</code> with a length you checked yourself.</li>
+<li>Always pass an array together with its length.</li></ul>`,
+code:`#include <stdio.h>
+#include <string.h>
+
+int main(void) {
+    char a[] = "hi";                 /* 3 bytes: 'h' 'i' 0 */
+    const char *b = "hi";            /* pointer to a read-only literal */
+    printf("%zu %zu %zu\\n", sizeof a, strlen(a), sizeof b);
+    a[0] = 'H';                      /* fine: we own this array */
+    /* b[0] = 'H'; */                /* undefined behavior */
+
+    char buf[8];
+    snprintf(buf, sizeof buf, "%s-%d", "abc", 42);   /* truncates safely */
+    printf("%s\\n", buf);
+    return 0;
+}`,
+quiz:[
+{q:'What is sizeof s for char s[] = "hello";?',o:['5','6','8','Undefined'],a:1,w:'Five letters plus the terminating zero byte make 6.'},
+{q:'Which line is undefined behavior?',o:['char a[] = "abc"; a[0] = \'x\';','char *p = "abc"; p[0] = \'x\';','const char *p = "abc"; puts(p);','char a[4] = "abc";'],a:1,w:'String literals live in read-only storage. The array version copies the literal into writable memory, so it is fine.'},
+{q:'What is wrong with char dst[4]; strcpy(dst, "hello");?',o:['Nothing, strcpy truncates','It writes 6 bytes into a 4-byte buffer','It will not compile','It leaks memory'],a:1,w:'A buffer overflow: strcpy copies until the terminator and never checks dst. This is the classic source of security bugs.'}],
+predict:[
+{t:'What does this print?',c:'char s[] = "abc";\ns[1] = \'\\0\';\nprintf("%zu %zu", sizeof s, strlen(s));',a:'4 1',w:'The array is still 4 bytes, but strlen stops at the first zero byte, after "a".'},
+{t:'What does this print?',c:'char s[] = "hello";\nchar *p = s + 1;\nprintf("%c %s", *p, p + 2);',a:'e lo',w:'p points at s[1] which is e. p + 2 points at s[3], and the string from there is "lo".'}],
+run:'gcc -std=c11 -Wall -Wextra -g -fsanitize=address,undefined t.c && ./a.out',
+tasks:[
+{t:'Write void reverse_str(char *s)',d:'Reverse a C string in place. Handle the empty string and one-character strings.',h:'Find the length first, then swap from both ends like reverse() in C 1, but on char.',
+s:`void reverse_str(char *s) {
+    size_t n = strlen(s);
+    if (n < 2) return;
+    char *lo = s, *hi = s + n - 1;
+    while (lo < hi) {
+        char t = *lo;
+        *lo++ = *hi;
+        *hi-- = t;
+    }
+}`,w:'The terminator stays where it is; only the n characters before it move.',
+test:`#include <assert.h>
+#include <stdio.h>
+#include <string.h>
+/* paste reverse_str here */
+int main(void){char a[]="hello";reverse_str(a);assert(strcmp(a,"olleh")==0);
+char e[]="";reverse_str(e);assert(e[0]==0);char o[]="x";reverse_str(o);assert(strcmp(o,"x")==0);puts("ok");}`},
+{t:'Write int safe_copy(char *dst, size_t cap, const char *src)',d:'Copy src into dst only if the whole string including its terminator fits in cap bytes. Return 0 on success and -1 if it does not fit (leave dst alone).',h:'You need strlen(src) + 1 bytes. Check before copying, then memcpy.',
+s:`int safe_copy(char *dst, size_t cap, const char *src) {
+    size_t n = strlen(src);
+    if (cap == 0 || n + 1 > cap) return -1;
+    memcpy(dst, src, n + 1);
+    return 0;
+}`,w:'This is the contract strcpy lacks: the caller states the capacity and the function refuses to overflow.',
+test:`#include <assert.h>
+#include <stdio.h>
+#include <string.h>
+/* paste safe_copy here */
+int main(void){char b[4];assert(safe_copy(b,4,"abc")==0&&strcmp(b,"abc")==0);
+assert(safe_copy(b,4,"abcd")==-1);assert(safe_copy(b,0,"")==-1);puts("ok");}`}]},
+
+{id:'p2',title:'Python 2: Iterators and generators',sub:'Lazy sequences, and why a generator can only be used once.',acc:'#8A5A00',
+intro:`<p>A <b>for</b> loop calls <code>iter()</code> on an iterable to get an iterator, then calls <code>next()</code> until <code>StopIteration</code>. A function containing <code>yield</code> is a <b>generator function</b>: calling it runs nothing yet, it returns a generator object that produces values on demand.</p>
+<ul><li>Generators are lazy and single-pass. Once exhausted they stay empty.</li>
+<li><code>[x for ...]</code> builds the whole list now; <code>(x for ...)</code> builds nothing until consumed.</li>
+<li>Lazy pipelines handle huge or endless streams (log files, camera frames) in constant memory.</li>
+<li><code>itertools.islice</code> takes a slice of any iterator.</li></ul>`,
+code:`def countdown(n):
+    while n > 0:
+        yield n
+        n -= 1
+
+g = countdown(3)
+print(next(g), next(g))     # 3 2
+print(list(g))              # [1]
+print(list(g))              # []  exhausted
+
+squares = [x * x for x in range(5)]   # list: built now
+lazy = (x * x for x in range(5))      # generator: built on demand
+print(sum(lazy), sum(lazy))           # 30 0`,
+quiz:[
+{q:'g = (x for x in range(3)); list(g). What does a second list(g) return?',o:['[0, 1, 2]','[]','An error','[0]'],a:1,w:'The generator is exhausted after the first pass and silently yields nothing.'},
+{q:'What does calling a function that contains yield return?',o:['Its first yielded value','A generator object; the body has not started','None','A list of all values'],a:1,w:'The body only runs when you call next() or iterate. That laziness is the point.'},
+{q:'Why prefer sum(x * x for x in range(10**7)) over summing a list comprehension?',o:['It is always faster','It never builds the full list in memory','Generators are mutable','It avoids overflow'],a:1,w:'The generator produces one value at a time, so memory use stays flat.'}],
+predict:[
+{t:'What does this print, in order?',c:'def f():\n    print("a")\n    yield 1\n    print("b")\n    yield 2\n\ng = f()\nprint("start")\nprint(next(g))',a:'start a 1',w:'Nothing runs at g = f(). The first next() runs the body up to the first yield.'},
+{t:'What does this print?',c:'it = iter([10, 20, 30])\nnext(it)\nprint(list(it))',a:'[20, 30]',w:'next() consumed 10 from the same iterator, so list() sees the rest.'}],
+run:'python3 t.py',
+tasks:[
+{t:'Write chunks(iterable, n)',d:'A generator that yields lists of up to n items. The last list may be shorter. It must work on any iterable, including another generator.',h:'Make an iterator with iter(), then repeatedly take list(islice(it, n)) and stop when it comes back empty.',
+s:`from itertools import islice
+
+def chunks(iterable, n):
+    it = iter(iterable)
+    while True:
+        block = list(islice(it, n))
+        if not block:
+            return
+        yield block`,w:'Slicing with [i:i+n] would only work on sequences. islice works on any iterator.',
+test:`# paste chunks above
+assert list(chunks([1, 2, 3, 4, 5], 2)) == [[1, 2], [3, 4], [5]]
+assert list(chunks([], 3)) == []
+assert list(chunks((x for x in range(5)), 2)) == [[0, 1], [2, 3], [4]]
+print("ok")`},
+{t:'Write moving_average(values, k)',d:'A generator that yields the average of each full window of k consecutive values from an iterable (think smoothing frame times). If there are fewer than k values, yield nothing.',h:'A collections.deque with maxlen=k drops old values for you.',
+s:`from collections import deque
+
+def moving_average(values, k):
+    win = deque(maxlen=k)
+    for v in values:
+        win.append(v)
+        if len(win) == k:
+            yield sum(win) / k`,w:'Constant memory regardless of input length, because only k values are ever held.',
+test:`# paste moving_average above
+assert list(moving_average([1, 2, 3, 4], 2)) == [1.5, 2.5, 3.5]
+assert list(moving_average([1, 2], 3)) == []
+print("ok")`}]},
+
+{id:'c3',title:'C 3: malloc, free and ownership',sub:'The heap, and the rule that someone must always own each block.',acc:'#0E6B8F',
+intro:`<p><code>malloc(n)</code> returns <code>n</code> bytes of heap memory or <code>NULL</code>. Nothing frees it for you. The discipline that keeps C programs correct is <b>ownership</b>: for every block, exactly one piece of code is responsible for calling <code>free</code> exactly once.</p>
+<ul><li>Size with <code>sizeof *p</code>, not a hard-coded type: <code>malloc(n * sizeof *p)</code>.</li>
+<li><code>calloc</code> zeroes the memory; <code>malloc</code> leaves garbage.</li>
+<li><code>free(NULL)</code> is safe. Freeing twice, or using memory after free, is undefined behavior.</li>
+<li><code>p = realloc(p, n)</code> leaks if it fails. Assign to a temporary first.</li>
+<li>Document ownership in the API: who allocates, who frees.</li></ul>
+<p>Run everything with <code>-fsanitize=address</code>; it reports leaks, overflows and use-after-free with a stack trace.</p>`,
+code:`#include <stdio.h>
+#include <stdlib.h>
+
+int *make_squares(size_t n) {
+    int *a = malloc(n * sizeof *a);
+    if (!a) return NULL;
+    for (size_t i = 0; i < n; i++) a[i] = (int)(i * i);
+    return a;                  /* ownership moves to the caller */
+}
+
+int main(void) {
+    int *s = make_squares(5);
+    if (!s) return 1;
+    printf("%d\\n", s[4]);
+    free(s);
+    s = NULL;                  /* no dangling pointer left behind */
+    return 0;
+}`,
+quiz:[
+{q:'Why is p = realloc(p, n); risky?',o:['realloc always moves the block','On failure it returns NULL and you lose the only pointer, leaking the old block','It cannot shrink memory','It zeroes the block'],a:1,w:'Use a temporary: tmp = realloc(p, n); if (tmp) p = tmp; else handle the error with p still valid.'},
+{q:'Which allocates room for n ints through int *p?',o:['malloc(n)','malloc(sizeof p)','malloc(n * sizeof *p)','malloc(n + sizeof(int))'],a:2,w:'sizeof *p follows the pointer’s type automatically if you change it later.'},
+{q:'What does free(NULL) do?',o:['Crashes','Nothing; it is defined to be safe','Frees all memory','Undefined behavior'],a:1,w:'That is why setting a pointer to NULL after free is a useful habit.'}],
+predict:[
+{t:'What does this print?',c:'int *p = calloc(3, sizeof *p);\np[1] = 7;\nprintf("%d %d %d", p[0], p[1], p[2]);\nfree(p);',a:'0 7 0',w:'calloc zero-initializes. With malloc, p[0] and p[2] would be garbage.'},
+{t:'How many of the two blocks are leaked when this ends? Answer with a number.',c:'char *a = malloc(10);\nchar *b = malloc(10);\na = b;\nfree(a);',a:'1',w:'After a = b the first block has no pointer left. The second block is freed once through a.'}],
+run:'gcc -std=c11 -Wall -Wextra -g -fsanitize=address,undefined t.c && ./a.out',
+tasks:[
+{t:'Write char *dup_str(const char *s)',d:'Return a newly allocated copy of s (like strdup), or NULL if allocation fails. The caller frees it.',h:'Allocate strlen(s) + 1 bytes, check for NULL, then memcpy including the terminator.',
+s:`char *dup_str(const char *s) {
+    size_t n = strlen(s) + 1;
+    char *d = malloc(n);
+    if (!d) return NULL;
+    memcpy(d, s, n);
+    return d;
+}`,w:'The most common bug here is forgetting the + 1 for the terminator.',
+test:`#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+/* paste dup_str here */
+int main(void){char *c=dup_str("abc");assert(c&&strcmp(c,"abc")==0);c[0]='X';free(c);
+char *e=dup_str("");assert(e&&e[0]==0);free(e);puts("ok");}`},
+{t:'Build a growable int vector',d:'Define typedef struct { int *data; size_t len, cap; } vec; then write int vec_push(vec *v, int x) that doubles capacity as needed (start at 4) and returns 0 or -1, and void vec_free(vec *v). A zeroed vec must be valid to start with.',h:'When len == cap, compute a new capacity, call realloc into a temporary, and only then update data and cap.',
+s:`typedef struct { int *data; size_t len, cap; } vec;
+
+int vec_push(vec *v, int x) {
+    if (v->len == v->cap) {
+        size_t ncap = v->cap ? v->cap * 2 : 4;
+        int *tmp = realloc(v->data, ncap * sizeof *tmp);
+        if (!tmp) return -1;         /* old block is still valid */
+        v->data = tmp;
+        v->cap = ncap;
+    }
+    v->data[v->len++] = x;
+    return 0;
+}
+
+void vec_free(vec *v) {
+    free(v->data);
+    v->data = NULL;
+    v->len = v->cap = 0;
+}`,w:'realloc(NULL, n) behaves like malloc, which is why a zeroed vec works with no special case.',
+test:`#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+/* paste vec code here */
+int main(void){vec v={0};for(int i=0;i<100;i++)assert(vec_push(&v,i)==0);
+assert(v.len==100&&v.data[99]==99);vec_free(&v);assert(v.data==NULL);puts("ok");}`}]},
+
+{id:'p3',title:'Python 3: Closures, decorators, context managers',sub:'Python’s version of guaranteed cleanup and wrapping behavior.',acc:'#8A5A00',
+intro:`<p>Functions are objects, so you can pass them around and return them. A <b>closure</b> is an inner function that remembers variables from its enclosing scope. A <b>decorator</b> is a function that takes a function and returns a replacement: <code>@timed</code> above <code>def f</code> means <code>f = timed(f)</code>.</p>
+<ul><li>Always use <code>functools.wraps</code> so the wrapper keeps the original name and docstring.</li>
+<li>Closures capture <i>variables</i>, not values, so they see the latest value when called (late binding).</li>
+<li>A <b>context manager</b> guarantees cleanup: <code>with</code> calls <code>__exit__</code> even if the body raises. It is Python’s answer to the C rule that every allocation has a matching free.</li>
+<li>Write one with <code>__enter__</code>/<code>__exit__</code>, or with <code>@contextlib.contextmanager</code> and a <code>try/finally</code> around <code>yield</code>.</li></ul>`,
+code:`import functools, time
+from contextlib import contextmanager
+
+def timed(fn):
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        t0 = time.perf_counter()
+        try:
+            return fn(*args, **kwargs)
+        finally:
+            print(f"{fn.__name__}: {time.perf_counter() - t0:.4f}s")
+    return wrapper
+
+@timed
+def work(n):
+    return sum(range(n))
+
+@contextmanager
+def opened(name):
+    print("open", name)
+    try:
+        yield name
+    finally:
+        print("close", name)     # always runs
+
+with opened("cam0") as c:
+    work(10**6)`,
+quiz:[
+{q:'@timed above def f is equivalent to:',o:['f = timed(f)','timed = f(timed)','f = timed','f() = timed()'],a:0,w:'The decorator runs once at definition time and its return value replaces the name f.'},
+{q:'Why use functools.wraps inside a decorator?',o:['It makes the wrapper faster','It preserves the wrapped function’s __name__ and docstring','It catches exceptions','It is required for the code to run'],a:1,w:'Without it every decorated function reports its name as "wrapper", which breaks logs, debuggers and test reports.'},
+{q:'If the body of a with block raises an exception, what happens to __exit__?',o:['It is skipped','It still runs, and can inspect or suppress the exception','It runs only if you catch the error','It runs twice'],a:1,w:'That guarantee is the whole point. Returning True from __exit__ suppresses the exception; return False or None to let it propagate.'}],
+predict:[
+{t:'What does this print?',c:'fs = [lambda: i for i in range(3)]\nprint([f() for f in fs])',a:'[2, 2, 2]',w:'All three lambdas share the variable i, which is 2 once the loop ends (late binding). The fix is lambda i=i: i.'},
+{t:'What does this print, in order?',c:'from contextlib import contextmanager\n\n@contextmanager\ndef cm():\n    print("enter")\n    try:\n        yield\n    finally:\n        print("exit")\n\ntry:\n    with cm():\n        print("body")\n        raise ValueError\nexcept ValueError:\n    print("caught")',a:'enter body exit caught',w:'The finally block runs while the exception propagates, before the outer except handles it.'}],
+run:'python3 t.py',
+tasks:[
+{t:'Write the retry(times, exceptions) decorator',d:'Call the wrapped function up to times times. If it raises one of the given exceptions, try again; if the last attempt also fails, re-raise. Any other exception propagates immediately. Keep the function’s name.',h:'You need three nested functions: retry(...) returns deco(fn), which returns wrapper(*a, **kw). Re-raise with a bare raise on the last attempt.',
+s:`import functools
+
+def retry(times, exceptions=(Exception,)):
+    def deco(fn):
+        @functools.wraps(fn)
+        def wrapper(*a, **kw):
+            for attempt in range(times):
+                try:
+                    return fn(*a, **kw)
+                except exceptions:
+                    if attempt == times - 1:
+                        raise
+        return wrapper
+    return deco`,w:'A decorator that takes arguments is a decorator factory, which is why there are three levels.',
+test:`# paste retry above
+calls = {"n": 0}
+
+@retry(times=3, exceptions=(ValueError,))
+def flaky():
+    calls["n"] += 1
+    if calls["n"] < 3:
+        raise ValueError
+    return "done"
+
+assert flaky() == "done" and calls["n"] == 3
+assert flaky.__name__ == "flaky"
+
+@retry(times=2, exceptions=(ValueError,))
+def bad():
+    raise ValueError
+
+raised = False
+try:
+    bad()
+except ValueError:
+    raised = True
+assert raised
+print("ok")`},
+{t:'Write a Resource context manager class',d:'Resource(log) appends "open" to the list on entry and "close" on exit, and must not swallow exceptions.',h:'Implement __enter__ and __exit__(self, exc_type, exc, tb). Return False from __exit__.',
+s:`class Resource:
+    def __init__(self, log):
+        self.log = log
+
+    def __enter__(self):
+        self.log.append("open")
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.log.append("close")
+        return False      # do not swallow exceptions`,w:'Same shape as open/close or malloc/free in C, but the language enforces the pairing.',
+test:`# paste Resource above
+log = []
+with Resource(log):
+    log.append("body")
+assert log == ["open", "body", "close"]
+log.clear()
+try:
+    with Resource(log):
+        raise KeyError
+except KeyError:
+    pass
+assert log == ["open", "close"]
+print("ok")`}]}
+
+];
+const soon=['C 4: Structs and function pointers','C 5: Bits and endianness','C 6: Multi-file programs and Makefiles','C 7: Debugging with sanitizers and gdb','Python 4: Classes and dataclasses','Python 5: Errors and logging','Python 6: pytest in depth','Python 7: Concurrency and ctypes'];
+
+function quiz(qs){const box=h('div');let score=0,done=0;const sc=h('p',{class:'mute'},'Score: 0 / '+qs.length);box.append(sc);
+qs.forEach((q,i)=>{const w=h('div',{class:'card'},h('p',{},h('b',{},(i+1)+'. '+q.q)));const why=h('p',{class:'why'});
+q.o.forEach((o,j)=>{const b=h('button',{class:'opt',onclick:()=>{if(w.dataset.d)return;w.dataset.d=1;done++;
+if(j===q.a){score++;b.classList.add('ok')}else{b.classList.add('bad');w.querySelectorAll('.opt')[q.a].classList.add('ok')}
+why.textContent=q.w;sc.textContent='Score: '+score+' / '+qs.length+(done===qs.length?' (finished)':'')}},o);w.append(b)});
+w.append(why);box.append(w)});return box}
+
+function predict(ps){const box=h('div');const norm=s=>s.trim().replace(/\s+/g,' ');
+ps.forEach(p=>{const pre=h('pre');pre.textContent=p.c;const inp=h('input',{type:'text',placeholder:'Your answer'});const msg=h('p',{class:'why'});
+const chk=h('button',{class:'b',onclick:()=>{if(norm(inp.value)===norm(p.a)){msg.className='why okc';msg.textContent='Correct. '+p.w}else{msg.className='why badc';msg.textContent='Not quite. Trace it line by line, run it, or reveal the answer.'}}},'Check');
+const rev=h('button',{class:'b ghost',onclick:()=>{msg.className='why';msg.textContent='Answer: '+p.a+'. '+p.w}},'Reveal');
+box.append(h('div',{class:'card'},h('p',{},p.t),pre,h('div',{class:'row'},inp,chk,rev),msg))});return box}
+
+function tasks(id,ts,run){const box=h('div');const r=h('pre');r.textContent=run;box.append(h('p',{class:'mute'},'Test locally with:'),r);
+ts.forEach((t,i)=>{const k=id+'-t'+i;const ta=h('textarea',{rows:8,spellcheck:'false',placeholder:'Write your answer here. It is saved in this browser.'});ta.value=store.get(k);ta.oninput=()=>store.set(k,ta.value);
+const hint=h('p',{class:'why',hidden:''},'Hint: '+t.h);const sol=h('div',{hidden:''});const sp=h('pre');sp.textContent=t.s;sol.append(sp,h('p',{class:'why'},t.w));
+const tp=h('pre');tp.textContent=t.test;const d=h('p',{});d.style.whiteSpace='pre-wrap';d.textContent=t.d;
+box.append(h('div',{class:'card'},h('p',{},h('b',{},t.t)),d,ta,tp,h('div',{class:'row'},h('button',{class:'b ghost',onclick:()=>hint.hidden=!hint.hidden},'Hint'),h('button',{class:'b ghost',onclick:()=>sol.hidden=!sol.hidden},'Reference solution')),hint,sol))});return box}
+
+function viz(v){const box=h('div',{class:'viz'});let i=-1;const src=h('div',{class:'src'});v.lines.forEach(l=>src.append(h('div',{class:'line'},l)));
+const mem=h('div',{class:'mem'});const note=h('p',{class:'why'});
+const prev=h('button',{class:'b ghost',onclick:()=>{i--;draw()}},'Back'),next=h('button',{class:'b',onclick:()=>{i++;draw()}},'Next line'),reset=h('button',{class:'b ghost',onclick:()=>{i=-1;draw()}},'Reset');
+function draw(){const st={};let hot=[];for(let s=0;s<=i;s++){Object.assign(st,v.steps[s].set);hot=Object.keys(v.steps[s].set)}
+[...src.children].forEach((d,n)=>d.classList.toggle('on',i>=0&&n===v.steps[i].line));
+mem.replaceChildren(...v.cells.map(c=>h('div',{class:'cell'+(hot.includes(c[0])?' hot':'')},h('span',{class:'ad'},c[1]),h('span',{class:'nm'},c[0]),h('span',{},st[c[0]]==null?'?':st[c[0]]))));
+note.textContent=i<0?'Press Next line to run the first statement.':v.steps[i].n;prev.disabled=i<0;next.disabled=i>=v.steps.length-1}
+const left=h('div',{},src,h('div',{class:'row',style:'margin-top:10px'},prev,next,reset)),right=h('div',{},mem,note);box.append(left,right);draw();return box}
+
+function show(id){const l=L.find(x=>x.id===id)||L[0];document.documentElement.style.setProperty('--acc',l.acc);
+document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.id===l.id));
+const m=$('#main');m.replaceChildren(h('h2',{},l.title),h('p',{class:'mute'},l.sub));
+const d=h('div');d.innerHTML=l.intro;m.append(d);const pre=h('pre');pre.textContent=l.code;m.append(pre);
+if(l.viz)m.append(h('h3',{},'Step through the memory'),viz(l.viz));
+m.append(h('h3',{},'Quick check'),quiz(l.quiz),h('h3',{},'Predict the output'),predict(l.predict),h('h3',{},'Write it yourself'),tasks(l.id,l.tasks,l.run));
+window.scrollTo(0,0);try{history.replaceState(null,'','#'+l.id)}catch(e){}}
+
+const nav=$('#nav');nav.append(h('h1',{},'C and Python fundamentals'),h('p',{},'Offline. Nothing leaves your browser.'));
+L.forEach(l=>nav.append(h('button',{'data-id':l.id,onclick:()=>show(l.id)},l.title)));
+nav.append(h('p',{style:'margin-top:18px'},'Coming next'));soon.forEach(s=>nav.append(h('span',{},s)));
+show(location.hash.slice(1)||'c1');
+</script></body></html>
