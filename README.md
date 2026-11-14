@@ -7,11 +7,11 @@ localStorage.
 
 ## Publish with GitHub Pages
 
-1. Create a new repository (for example `c-python-course`).
+1. Anew repository ( `CPython`).
 2. Upload `index.html` and `README.md` to the repository root.
 3. Settings > Pages > Build and deployment > Source: **Deploy from a branch**,
    branch **main**, folder **/ (root)**, then Save.
-4. After a minute the site is live at `https://<your-username>.github.io/c-python-course/`.
+4. After a minute the site is live at `https://upennmobin.github.io/CPython/`.
 
 On iPhone, Safari can do all of this through the GitHub website (Add file > Upload files).
 Open the Pages URL in Safari and use Share > Add to Home Screen to launch it like an app.
